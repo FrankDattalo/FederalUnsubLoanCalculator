@@ -15,15 +15,16 @@ This notebook is used as a Federal Unsub Loan Payment Calculator. Please note, t
 |LOAN_INTEREST_RATE|Represents the fixed interest rate of the loans as presented on the [The Federal Student Aid Website](https://teststudentaid.ed.gov/testise/types/loans/interest-rates).|
 |DAYS_PER_PAYMENT|Represents the amount of time between payments.|
 |AMOUNT_PER_PAYMENT|Represents the monetary amount, in dollars, per payment.|
+|DAYS_BEFORE_FIRST_PAYMENT| Represents the amount of days before the first payment is made. |
 
 
 ```python
-LOAN_PRESENT_VALUE = 55000 #edit this
-LOAN_PRINCIPLE_VALUE = 50000 #edit this
+LOAN_PRESENT_VALUE = 55000 
+LOAN_PRINCIPLE_VALUE = 50000
 LOAN_INTEREST_RATE = .0429
-
-DAYS_PER_PAYMENT = 15 #edit this
-AMOUNT_PER_PAYMENT = 250 #edit this
+DAYS_PER_PAYMENT = 15
+AMOUNT_PER_PAYMENT = 250
+DAYS_BEFORE_FIRST_PAYMENT = 340
 ```
 
 ### Code Used For Calculations
@@ -41,10 +42,18 @@ def interest_rate_factor(interest_rate, days_in_year):
 def interest_formula(outstanding_principle_balance, days_since_last_payment, interest_rate_factor):
     return outstanding_principle_balance * days_since_last_payment * interest_rate_factor
 
-def forcast_payments(balance, principle_balance, days_per_payment, interest_rate, payment_value):
+def forcast_payments(balance, principle_balance, days_per_payment, interest_rate, payment_value, days_before_first):
+    
     balances = []
     
     ir_factor = interest_rate_factor(interest_rate, 365)
+    
+    for i in range(days_before_first // 30):
+        balance += interest_formula(principle_balance, i * 30, ir_factor)
+    
+        balances.append(balance)
+    
+    balance_before_payments = balance
     
     days_since_last_accrual = 30
     
@@ -70,10 +79,10 @@ def forcast_payments(balance, principle_balance, days_per_payment, interest_rate
             return("Payment value or days per payment is too low, " + 
                             "interest will accrue faster than payment")
         
-    return balances
+    return balance_before_payments, balances
 
-def payment_info(pv, principle, days_per_payment, interest_rate, payment_amount):
-    balances = forcast_payments(pv, principle, days_per_payment, interest_rate, payment_amount)
+def payment_info(pv, principle, days_per_payment, interest_rate, payment_amount, dbfp):
+    peak, balances = forcast_payments(pv, principle, days_per_payment, interest_rate, payment_amount, dbfp)
     
     if type(balances) is str:
         return balances
@@ -102,6 +111,7 @@ def payment_info(pv, principle, days_per_payment, interest_rate, payment_amount)
         Years Required to Pay Off Loans:  {}
         Number of payments required:      {}
         Near cumulative value payed:      {}
+        Balance before first payment:     {}
         """.format(pv, 
                    principle,
                    days_per_payment, 
@@ -111,7 +121,8 @@ def payment_info(pv, principle, days_per_payment, interest_rate, payment_amount)
                    months, 
                    years, 
                    len(payments),
-                   ncv))
+                   ncv,
+                   peak))
     
     plt.figure(figsize=(20, 10))
     plt.plot(payments, balances)
@@ -120,7 +131,8 @@ def payment_info(pv, principle, days_per_payment, interest_rate, payment_amount)
     plt.title("Loan Balance Over Time")
     plt.show()
     
-payment_info(LOAN_PRESENT_VALUE, LOAN_PRINCIPLE_VALUE, DAYS_PER_PAYMENT, LOAN_INTEREST_RATE, AMOUNT_PER_PAYMENT)
+payment_info(LOAN_PRESENT_VALUE, LOAN_PRINCIPLE_VALUE, DAYS_PER_PAYMENT, 
+             LOAN_INTEREST_RATE, AMOUNT_PER_PAYMENT, DAYS_BEFORE_FIRST_PAYMENT)
 ```
 
     
@@ -129,11 +141,12 @@ payment_info(LOAN_PRESENT_VALUE, LOAN_PRINCIPLE_VALUE, DAYS_PER_PAYMENT, LOAN_IN
             Days Per Payment:                 15
             Interest Rate:                    0.0429
             Amount Per Payment:               250
-            Days Required to Pay Off Loans:   4020
-            Months Required to Pay Off Loans: 134.0
-            Years Required to Pay Off Loans:  11.166666666666666
-            Number of payments required:      268
-            Near cumulative value payed:      66812.2
+            Days Required to Pay Off Loans:   4890
+            Months Required to Pay Off Loans: 163.0
+            Years Required to Pay Off Loans:  13.583333333333334
+            Number of payments required:      326
+            Near cumulative value payed:      81374.39
+            Balance before first payment:     64696.57534246575
             
 
 
